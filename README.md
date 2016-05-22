@@ -109,3 +109,10 @@ run it uses the AWS credentials exported on the command line to connect to Dynam
 ```bash
 $ go run cmd/main/main.go
 ```
+
+Besides that, there are a couple of tests that are run automatically by Travis. To run those tests 
+locally, execute
+
+```bash
+$ go test
+```

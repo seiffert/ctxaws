@@ -1,4 +1,4 @@
-# ctxaws - Perform AWS requests while respecting contexts
+# ctxaws - Context-Aware AWS SDK Operations
 
 When using the [`net/context`](https://godoc.org/golang.org/x/net/context) package, one should
 respect context expiration when performing requests to backing services. Typically, a

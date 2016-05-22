@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"golang.org/x/net/context"
@@ -59,7 +60,9 @@ func TestInContext_ServerError(t *testing.T) {
 
 func scanTableWithServer(ctx context.Context, handler func(http.ResponseWriter, *http.Request)) error {
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	cfg := aws.NewConfig().WithEndpoint(server.URL)
+	cfg := aws.NewConfig().
+		WithEndpoint(server.URL).
+		WithCredentials(credentials.NewStaticCredentials("AKID", "SECRET", ""))
 	client := dynamodb.New(session.New(cfg))
 	req, _ := client.ScanRequest(&dynamodb.ScanInput{})
 

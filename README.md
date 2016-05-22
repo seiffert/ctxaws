@@ -1,5 +1,6 @@
 # ctxaws - Context-Aware AWS SDK Operations
 
+[![Build Status](https://travis-ci.org/seiffert/ctxaws.svg?branch=master)](https://travis-ci.org/seiffert/ctxaws)
 [![Go Report Card](https://goreportcard.com/badge/seiffert/ctxaws "Go Report Card")](https://goreportcard.com/report/seiffert/ctxaws)
 
 When using the [`net/context`](https://godoc.org/golang.org/x/net/context) package, one should

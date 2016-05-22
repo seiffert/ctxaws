@@ -36,49 +36,72 @@ func main() {
 	// Writer
 	go func() {
 		for {
-			item, err := dynamodbattribute.MarshalMap(struct {
-				Time time.Time
-				Test string `dynamodbav:"test"`
-			}{Time: time.Now(), Test: fmt.Sprintf("test-%d", time.Now().Unix())})
-			if err != nil {
-				log.Println("Marshalling error:", err)
-				continue
-			}
-
-			req, out := client.PutItemRequest(&dynamodb.PutItemInput{
-				TableName: aws.String(TestDynamoDBTable),
-				Item:      item,
-				ReturnConsumedCapacity: aws.String("TOTAL"),
-			})
-
 			ctx, cancel := context.WithTimeout(context.Background(), TestContextTimeout)
 			defer cancel()
-			if err := ctxaws.InContext(ctx, req); err != nil {
-				log.Println("Error:", err)
+
+			if err := addItem(ctx, client); err != nil {
+				log.Println("Error adding item:", err)
 				continue
 			}
-			log.Println(aws.Float64Value(out.ConsumedCapacity.CapacityUnits), "consumed")
+
+			log.Println("Added 1 item")
 		}
 	}()
 	// Reader
 	go func() {
 		for {
-			req, out := client.ScanRequest(&dynamodb.ScanInput{
-				ConsistentRead: aws.Bool(true),
-				TableName:      aws.String(TestDynamoDBTable),
-			})
-
 			ctx, cancel := context.WithTimeout(context.Background(), TestContextTimeout)
 			defer cancel()
-			if err := ctxaws.InContext(ctx, req); err != nil {
-				log.Println("Error:", err)
+
+			count, err := countItems(ctx, client)
+			if err != nil {
+				log.Println("Error counting items:", err)
 				continue
 			}
-			log.Println(len(out.Items), "items")
+
+			log.Println("Counted", count, "items")
 		}
 	}()
 	// Keep the program running until interrupted
 	for {
 		select {}
 	}
+}
+
+func addItem(ctx context.Context, client *dynamodb.DynamoDB) error {
+	item, err := dynamodbattribute.MarshalMap(struct {
+		Time time.Time
+		Test string `dynamodbav:"test"`
+	}{Time: time.Now(), Test: fmt.Sprintf("test-%d", time.Now().Unix())})
+	if err != nil {
+		return err
+	}
+
+	req, _ := client.PutItemRequest(&dynamodb.PutItemInput{
+		TableName: aws.String(TestDynamoDBTable),
+		Item:      item,
+	})
+
+	if err := ctxaws.InContext(ctx, req); err != nil {
+		return err
+	}
+	return nil
+}
+
+func countItems(ctx context.Context, client *dynamodb.DynamoDB) (int, error) {
+	count := 0
+	req, _ := client.ScanRequest(&dynamodb.ScanInput{
+		TableName: aws.String(TestDynamoDBTable),
+	})
+	if err := ctxaws.InContext(ctx, req); err != nil {
+		return 0, err
+	}
+	err := req.EachPage(func(out interface{}, last bool) bool {
+		count += len(out.(*dynamodb.ScanOutput).Items)
+		return !last
+	})
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

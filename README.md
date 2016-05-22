@@ -1,6 +1,6 @@
 # ctxaws - Perform AWS requests while respecting contexts
 
-When using the [`net/context`](https://godoc.org/golang.org/x/net/context) package, one should 
+When using the [`net/context`](https://godoc.org/golang.org/x/net/context) package, one should
 respect context expiration when performing requests to backing services. Typically, a
 `context.Context` is created for every incoming request and all calls to other services that happen
 during this request have to be cancelled when the request's context expires.
@@ -9,11 +9,11 @@ The `ctxaws` package includes a helper function `ctxaws.InContext` that performs
 while respecting a context's cancellation.
 
 Support for the context pattern in the SDK directly [was discussed](https://github.com/aws/aws-sdk-go/issues/75)
-but not implemented.  
+but not implemented.
 
 ## Usage
 
-In Go projects using the AWS SDK, requests or most typically performed like this: 
+In Go projects using the AWS SDK, requests or most typically performed like this:
 
 ```go
 func countItems() (int, error) {
@@ -21,7 +21,7 @@ func countItems() (int, error) {
         TableName: aws.String("my-table"),
     })
     if err != nil {
-        return 0, err   
+        return 0, err
     }
     return len(out.Items), nil
 }
@@ -42,20 +42,65 @@ func countItems(ctx context.Context) (int, error) {
         TableName: aws.String("my-table"),
     })
     if err := ctxaws.InContext(ctx, req); err != nil {
-        return 0, err   
+        return 0, err
     }
     return len(out.Items), nil
 }
 ```
 
-By using the special `*Request` methods of the AWS service clients, we can delegate the processing 
-of the request to `ctxhttp` which makes sure that the context cancellation is respected while 
+By using the special `*Request` methods of the AWS service clients, we can delegate the processing
+of the request to `ctxhttp` which makes sure that the context cancellation is respected while
 performing the request.
+
+### Pagination
+
+When using SDK operations that return a list of resources, it is almost always a good idea to use
+the SDKs `*Pages` functions. With this in mind, the example from above becomes slightly more complex
+and could be implemented like this:
+
+```go
+func countItems() (int, error) {
+    count := 0
+    err := client.ScanPages(&dynamodb.ScanInput{
+        TableName: aws.String("my-table"),
+    }, func(out *dynamodb.ScanOutput, last bool) bool {
+        count += len(out.Items)
+        return !last
+    })
+    if err != nil {
+        return 0, err
+    }
+    return count, nil
+}
+```
+
+With a context, the `ScanPages` method cannot be used as is and one needs to use the internal page
+abstraction of the SDK:
+
+```go
+func countItems(ctx context.Context) (int, error) {
+    count := 0
+    req, _ := client.ScanRequest(&dynamodb.ScanInput{
+        TableName: aws.String("my-table"),
+    })
+    if err := ctxaws.InContext(ctx, req); err != nil {
+        return 0, err
+    }
+    err := req.EachPage(func(out interface{}, last bool) bool {
+        count += len(out.(*dynamodb.ScanOutput).Items)
+        return !last
+    })
+    if err != nil {
+        return 0, err
+    }
+    return count, nil
+}
+```
 
 ## Development
 
 There is a `cmd/main` package with an example program that can be used for testing. Please note that
-it requires a DynamoDB table named `test-table` that needs to be created before running it. When 
+it requires a DynamoDB table named `test-table` that needs to be created before running it. When
 run it uses the AWS credentials exported on the command line to connect to DynamoDB.
 
 ```bash

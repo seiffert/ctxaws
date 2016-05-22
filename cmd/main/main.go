@@ -93,10 +93,7 @@ func countItems(ctx context.Context, client *dynamodb.DynamoDB) (int, error) {
 	req, _ := client.ScanRequest(&dynamodb.ScanInput{
 		TableName: aws.String(TestDynamoDBTable),
 	})
-	if err := ctxaws.InContext(ctx, req); err != nil {
-		return 0, err
-	}
-	err := req.EachPage(func(out interface{}, last bool) bool {
+	err := ctxaws.PaginateInContext(ctx, req, func(out interface{}, last bool) bool {
 		count += len(out.(*dynamodb.ScanOutput).Items)
 		return !last
 	})

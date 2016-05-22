@@ -77,8 +77,10 @@ func countItems() (int, error) {
 }
 ```
 
-With a context, the `ScanPages` method cannot be used as is and one needs to use the internal page
-abstraction of the SDK:
+With a context, one can use `PaginageInContext` which works very similar to the `*Pages`
+methods. The only difference is the type of the passed closure's first argument. Instead of a
+reqular `*Output` type, the closure takes an `interface{}` which can safely be cased to the
+respective `*Output` type (`*dynamodb.ScanOutput` in the example):
 
 ```go
 func countItems(ctx context.Context) (int, error) {
@@ -86,10 +88,7 @@ func countItems(ctx context.Context) (int, error) {
     req, _ := client.ScanRequest(&dynamodb.ScanInput{
         TableName: aws.String("my-table"),
     })
-    if err := ctxaws.InContext(ctx, req); err != nil {
-        return 0, err
-    }
-    err := req.EachPage(func(out interface{}, last bool) bool {
+    err := ctxaws.PaginateInContext(ctx, req, func(out interface{}, last bool) bool {
         count += len(out.(*dynamodb.ScanOutput).Items)
         return !last
     })

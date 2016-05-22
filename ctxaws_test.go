@@ -19,7 +19,7 @@ func TestInContext_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
-	cfg := aws.NewConfig().WithEndpoint(server.URL)
+	cfg := aws.NewConfig().WithEndpoint(server.URL).WithRegion("eu-west-1")
 	client := dynamodb.New(session.New(cfg))
 	req, _ := client.ScanRequest(&dynamodb.ScanInput{
 		TableName: aws.String("test-table"),
@@ -41,7 +41,7 @@ func TestInContext_SlowServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(2 * time.Second)
 	}))
-	cfg := aws.NewConfig().WithEndpoint(server.URL)
+	cfg := aws.NewConfig().WithEndpoint(server.URL).WithRegion("eu-west-1")
 	client := dynamodb.New(session.New(cfg))
 	req, _ := client.ScanRequest(&dynamodb.ScanInput{
 		TableName: aws.String("test-table"),
@@ -67,7 +67,7 @@ func TestInContext_ServerError(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
-	cfg := aws.NewConfig().WithEndpoint(server.URL)
+	cfg := aws.NewConfig().WithEndpoint(server.URL).WithRegion("eu-west-1")
 	client := dynamodb.New(session.New(cfg))
 	req, _ := client.ScanRequest(&dynamodb.ScanInput{
 		TableName: aws.String("test-table"),

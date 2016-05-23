@@ -71,5 +71,6 @@ func InContext(ctx context.Context, req *request.Request) error {
 
 	req.Handlers.Send.Remove(corehandlers.SendHandler)
 	req.Handlers.Send.PushBack(sendHandler)
+	req.Retryer = NewContextAwareRetryer(ctx)
 	return req.Send()
 }

@@ -42,22 +42,6 @@ func TestInContext_SlowServer(t *testing.T) {
 	}
 }
 
-func TestInContext_ServerError(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	err := scanTableWithServer(ctx, func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(500 * time.Millisecond)
-		w.WriteHeader(http.StatusInternalServerError)
-	})
-	if err == nil {
-		t.Fatalf("No error occurred when context was cancelled")
-	}
-	if err != ctx.Err() {
-		t.Fatalf("The error that occurred was not the context cancellation error: %s", err)
-	}
-}
-
 func scanTableWithServer(ctx context.Context, handler func(http.ResponseWriter, *http.Request)) error {
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	cfg := aws.NewConfig().

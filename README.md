@@ -55,6 +55,10 @@ By using the special `*Request` methods of the AWS service clients, we can deleg
 of the request to `ctxhttp` which makes sure that the context cancellation is respected while
 performing the request.
 
+Besides cancelling requests that exceed the context's deadline, `ctxaws` also uses a custom retry
+mechanism that stops retrying as soon as the context expires. This way, the context ist honored 
+during HTTP requests and during backoff periods.
+
 ### Pagination
 
 When using SDK operations that return a list of resources, it is almost always a good idea to use
